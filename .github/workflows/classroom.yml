@@ -1,0 +1,166 @@
+name: Autograding Tests
+'on':
+- push
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Setup Java 21
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+        cache: 'maven'
+    - name: Resolve Autograder Maven Dependencies
+      run: mvn -f .autograde/pom.xml dependency:go-offline dependency:resolve-plugins
+    - name: Resolve Project Maven Dependencies
+      run: test -f pom.xml && mvn dependency:go-offline dependency:resolve-plugins || true
+
+    - name: "Rubric: Project Group Name set to edu.ensign.cs460"
+      id: testgroupid
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: "Rubric: Project Group Name set to edu.ensign.cs460"
+        command: mvn -f .autograde/pom.xml -Dtest=PomXmlTest#testGroupId test
+        timeout: 10
+        max-score: 10
+
+    - name: "Rubric: Project Artifact Id set to banking-api"
+      id: testartifactid
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: "Rubric: Project Artifact Id set to banking-api"
+        command: mvn -f .autograde/pom.xml -Dtest=PomXmlTest#testGroupId test
+        timeout: 10
+        max-score: 10
+
+    - name: "Rubric: Project Package Name set to edu.ensign.cs460.banking_api"
+      id: testpackagename
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: "Rubric: Project Package Name set to edu.ensign.cs460.banking_api"
+        command: head -2 src/main/java/edu/ensign/cs460/banking_api/BankingApiApplication.java | grep "package edu.ensign.cs460.banking_api"
+        timeout: 10
+        max-score: 10
+
+    - name: "Rubric: Dependencies include Spring Boot Dev Tools"
+      id: testdepspringdev
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: "Rubric: Dependencies include Spring Boot Dev Tools" 
+        command: mvn -f .autograde/pom.xml -Dtest=PomXmlTest#testSpringBootDevtoolsDependency test
+        timeout: 10
+        max-score: 6
+
+    - name: "Rubric: Dependencies include MySQL Connector J"
+      id: testdepmysql
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: "Rubric: Dependencies include MySQL Connector J" 
+        command: mvn -f .autograde/pom.xml -Dtest=PomXmlTest#testMysqlConnectorJDependency test
+        timeout: 10
+        max-score: 6
+
+    - name: "Rubric: Dependencies include Lombok"
+      id: testdeplombok
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: "Rubric: Dependencies include Lombok" 
+        command: mvn -f .autograde/pom.xml -Dtest=PomXmlTest#testLombokDependency test
+        timeout: 10
+        max-score: 6
+
+    - name: "Rubric: Dependencies include Spring Boot Starter Test"
+      id: testdepstartertest
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: "Rubric: Dependencies include Spring Boot Starter Test" 
+        command: mvn -f .autograde/pom.xml -Dtest=PomXmlTest#testSpringBootStarterTestDependency test
+        timeout: 10
+        max-score: 6
+
+    - name: "Rubric: Dependencies include Spring Boot Starter Web"
+      id: testdepstarterweb
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: "Rubric: Dependencies include Spring Boot Starter Web" 
+        command: mvn -f .autograde/pom.xml -Dtest=PomXmlTest#testSpringBootStarterWebDependency test
+        timeout: 10
+        max-score: 6
+
+    - name: "Rubric: Dependencies include Spring Boot Starter JPA"
+      id: testdepstarterjpa
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: "Rubric: Dependencies include Spring Boot Starter JPA" 
+        command: mvn -f .autograde/pom.xml -Dtest=PomXmlTest#testSpringBootStarterJpaDependency test
+        timeout: 10
+        max-score: 6
+
+    - name: "Rubric: Dependencies include Spring Boot Starter Security"
+      id: testdepstartersecurity
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: "Rubric: Dependencies include Spring Boot Starter Security" 
+        command: mvn -f .autograde/pom.xml -Dtest=PomXmlTest#testSpringBootStarterSecurityDependency test
+        timeout: 10
+        max-score: 6
+
+    - name: "Rubric: Project was pushed to the GitHub Repository"
+      id: testgitpush
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: "Rubric: Project was pushed to the GitHub Repository"
+        command: test -f pom.xml
+        timeout: 10
+        max-score: 30
+
+    - name: "Rubric: Application runs successfully"
+      id: testappruns
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: "Rubric: Application runs successfully"
+        command: SPRING_MAIN_WEBAPPLICATIONTYPE=NONE mvn package spring-boot:run
+        timeout: 30
+        max-score: 30
+      env:  # Define environment variables for this specific step
+          SPRING_MAIN_WEBAPPLICATIONTYPE: NONE 
+          # MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: '*'
+          # MANAGEMENT_ENDPOINT_SHUTDOWN_ENABLED: 'true'
+          # ENDPOINTS_SHUTDOWN_ENABLED: 'true'
+
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        TESTGROUPID_RESULTS: "${{steps.testgroupid.outputs.result}}"
+        TESTARTIFACTID_RESULTS: "${{steps.testartifactid.outputs.result}}"
+        TESTPACKAGENAME_RESULTS: "${{steps.testpackagename.outputs.result}}"
+        TESTGITPUSH_RESULTS: "${{steps.testgitpush.outputs.result}}"
+        TESTAPPRUNS_RESULTS: "${{steps.testappruns.outputs.result}}"
+        TESTDEPSPRINGDEV_RESULTS: "${{steps.testdepspringdev.outputs.result}}"
+        TESTDEPMYSQL_RESULTS: "${{steps.testdepmysql.outputs.result}}"
+        TESTDEPLOMBOK_RESULTS: "${{steps.testdeplombok.outputs.result}}"
+        TESTDEPSTARTERTEST_RESULTS: "${{steps.testdepstartertest.outputs.result}}"
+        TESTDEPSTARTERWEB_RESULTS: "${{steps.testdepstarterweb.outputs.result}}"
+        TESTDEPSTARTERJPA_RESULTS: "${{steps.testdepstarterjpa.outputs.result}}"
+      with:
+        runners: >-
+          testgroupid, 
+          testartifactid, 
+          testpackagename, 
+          testgitpush, 
+          testappruns, 
+          testdepspringdev,
+          testdepmysql,
+          testdeplombok,
+          testdepstartertest,
+          testdepstarterweb,
+          testdepstarterjpa

@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Check if a file was provided as an argument
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <zipfile>"
+    exit 1
+fi
+
+ZIPFILE="$1"
+
+# Check if the ZIP file exists
+if [ ! -f "$ZIPFILE" ]; then
+    echo "Error: File '$ZIPFILE' not found."
+    exit 1
+fi
+
+# Create a temporary directory for extraction
+TEMP_DIR=$(mktemp -d)
+
+# Extract the zip file to the temporary directory
+unzip -q "$ZIPFILE" -d "$TEMP_DIR"
+
+top_level_dir=$(ls "$TEMP_DIR")
+prj_dir="$TEMP_DIR/$top_level_dir"
+
+# Move the contents of the 'banking-api' directory to the current directory
+# Including hidden files
+if [ -d "$prj_dir" ]; then
+    # Move all visible files and directories
+    mv -v "$prj_dir/"* .
+
+    # Move hidden files and directories
+    shopt -s dotglob
+    mv -v "$prj_dir/".* .
+    shopt -u dotglob
+
+    # Remove the now empty 'demo' directory
+    rmdir "$prj_dir"
+else
+    echo "Error: The directory '$top_level_dir' does not exist within the ZIP file."
+    exit 1
+fi
+
+# Clean up the temporary directory
+rm -r "$TEMP_DIR"
+
+cat >> .gitignore <<HERE
+
+### Project Specific ###
+.gitattributes
+*.zip
+
+### Mac OS ###
+.DS_Store
+
+HERE
+
+echo "Extraction completed successfully."

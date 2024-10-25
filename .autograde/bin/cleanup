@@ -1,0 +1,12 @@
+#!/bin/bash
+
+rm -rf src \
+    target \
+    HELP.md \
+    mvnw \
+    mvnw.cmd \
+    pom.xml \
+    .mvn \
+    .gitattributes
+
+git restore .gitignore

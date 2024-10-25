@@ -1,0 +1,3 @@
+#!/bin/bash
+
+mvn -f .autograde/pom.xml clean test
